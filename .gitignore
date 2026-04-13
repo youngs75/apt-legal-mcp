@@ -11,5 +11,4 @@ data/precedents.db
 .ruff_cache/
 dist/
 build/
-.ai/sessions/
 .claude/
