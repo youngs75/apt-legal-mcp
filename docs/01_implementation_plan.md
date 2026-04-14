@@ -1,5 +1,12 @@
 # 공동주택 법률 자문 AI 시스템 — 전체 구현 계획서
 
+> **⚠️ 범용화 노트 (2026-04-14):**
+> 본 문서는 초기 구상(공동주택 도메인 전제) 기준이다. 이후 MCP 서버는 `kor-legal-mcp`로 **도메인 무관 범용 한국 법령 조회 서버**로 재정의되었다.
+> - 식별자만 갱신: `apt-legal-mcp` → `kor-legal-mcp`, `apt_legal_mcp` → `kor_legal_mcp`, `apt-legal://` → `kor-legal://`
+> - 도메인 특화 자산(운영규약, 지자체 조례 RAG)은 별도 MCP 서버(`apt-domain-mcp`, 예정)로 분리
+> - "공동주택" narrative는 Vertical Agent(`apt-legal-agent`) 책임 — 본 문서의 도메인 서술은 historical context로 보존
+> 자세한 현 구조는 `AGENTS.md` 참조.
+
 ## 1. 프로젝트 개요
 
 ### 1.1 Use Case 명
@@ -94,7 +101,7 @@
 
 ```json
 {
-  "name": "apt-legal-mcp",
+  "name": "kor-legal-mcp",
   "version": "1.0.0",
   "description": "한국 공동주택 관련 법령·판례·행정해석 조회 MCP 서버"
 }
@@ -224,11 +231,11 @@ Output:
 
 ```
 ResourceTemplate:
-  - apt-legal://law/{law_name}/article/{article_number}
+  - kor-legal://law/{law_name}/article/{article_number}
     → 특정 조문 전문 반환
-  - apt-legal://precedent/{case_number}
+  - kor-legal://precedent/{case_number}
     → 특정 판례 상세 반환
-  - apt-legal://guide/dispute-types
+  - kor-legal://guide/dispute-types
     → 지원 분쟁 유형 목록 반환
 ```
 
@@ -424,7 +431,7 @@ Agent가 사용자 질문을 아래 분쟁 유형으로 분류한다:
 ### 5.1 Docker 이미지
 
 ```
-apt-legal-mcp:1.0.0        — MCP 서버
+kor-legal-mcp:1.0.0        — MCP 서버
 apt-legal-agent:1.0.0 — Vertical Agent
 ```
 
@@ -432,9 +439,9 @@ apt-legal-agent:1.0.0 — Vertical Agent
 
 | 리소스 | 이름 | 설명 |
 |--------|------|------|
-| Deployment | apt-legal-mcp | MCP 서버 Pod (replicas: 1) |
+| Deployment | kor-legal-mcp | MCP 서버 Pod (replicas: 1) |
 | Deployment | apt-legal-agent | Agent Pod (replicas: 1) |
-| Service | apt-legal-mcp-svc | ClusterIP, 포트 8001 |
+| Service | kor-legal-mcp-svc | ClusterIP, 포트 8001 |
 | Service | apt-legal-agent-svc | ClusterIP, 포트 8000 |
 | Ingress | apt-legal-agent-ingress | ALB, 외부 노출 (/a2a) |
 | ConfigMap | apt-legal-config | 법령 API 키, 모델 설정 |
@@ -449,7 +456,7 @@ ALB (AWS EKS Ingress)
   ↓
 apt-legal-agent-svc:8000    ← 외부 노출 (A2A endpoint)
   ↓ (클러스터 내부)
-apt-legal-mcp-svc:8001   ← 내부 전용 (MCP endpoint)
+kor-legal-mcp-svc:8001   ← 내부 전용 (MCP endpoint)
   ↓ (외부 호출)
 law.go.kr API            ← 국가법령정보센터
 ```
@@ -465,7 +472,7 @@ CACHE_TTL_HOURS=24
 SERVER_PORT=8001
 
 # Agent
-MCP_SERVER_URL=http://apt-legal-mcp-svc:8001/mcp
+MCP_SERVER_URL=http://kor-legal-mcp-svc:8001/mcp
 LLM_API_KEY=           # OpenAI API 키
 LLM_MODEL=gpt-4o
 LLM_TEMPERATURE=0.1
@@ -542,7 +549,7 @@ Agent 동작:
 
 | 주차 | 작업 | 산출물 |
 |------|------|--------|
-| 1주차 | MCP 서버 개발 (Tools 구현, 법령 API 연동) | apt-legal-mcp 서버 |
+| 1주차 | MCP 서버 개발 (Tools 구현, 법령 API 연동) | kor-legal-mcp 서버 |
 | 1주차 | 판례 데이터 사전 수집 및 적재 | precedents.db |
 | 2주차 | Vertical Agent 개발 (A2A, 오케스트레이션) | apt-legal-agent |
 | 2주차 | EKS 배포 및 ChatGPT Enterprise 연동 | 배포 완료 |

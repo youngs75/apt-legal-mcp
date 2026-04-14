@@ -1,5 +1,7 @@
 # Apt-Legal Agent — Codex 작업지시서
 
+> **⚠️ 참고 (2026-04-14):** 본 문서는 별도 리포 `apt-legal-agent`(Vertical AI Agent)의 작업지시서이며, 본 리포(`kor-legal-mcp`)에는 **참고용**으로만 보관된다. Agent 측 도메인 지식(공동주택 운영규약, 분쟁 유형 등)은 Agent와 별도 RAG MCP 서버에서 처리하고, 본 MCP 서버는 범용 법령 조회만 담당한다.
+
 ## 개요
 
 공동주택 법률 자문 Vertical AI Agent를 개발한다.

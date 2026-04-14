@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from apt_legal_mcp.cache.memory_cache import make_key
-from apt_legal_mcp.clients.law_api import LawApiError
-from apt_legal_mcp.models.schemas import (
+from kor_legal_mcp.cache.memory_cache import make_key
+from kor_legal_mcp.clients.law_api import LawApiError
+from kor_legal_mcp.models.schemas import (
     PrecedentSearchResultItem,
     SearchPrecedentInput,
     SearchPrecedentOutput,
 )
-from apt_legal_mcp.tools._common import (
+from kor_legal_mcp.tools._common import (
     ToolContext,
     extract_keywords,
     normalize_query,

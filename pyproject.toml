@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "apt-legal-mcp"
+name = "kor-legal-mcp"
 version = "1.0.0"
-description = "한국 공동주택 관련 법령·판례·행정해석 조회 MCP 서버"
+description = "한국 법령·판례·행정해석 조회 범용 MCP 서버 (law.go.kr Open API 기반)"
 requires-python = ">=3.12"
 dependencies = [
     "mcp>=1.0.0",
@@ -26,10 +26,10 @@ dev = [
 ]
 
 [project.scripts]
-apt-legal-mcp-stdio = "apt_legal_mcp.scripts.run_stdio:main"
+kor-legal-mcp-stdio = "kor_legal_mcp.scripts.run_stdio:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/apt_legal_mcp"]
+packages = ["src/kor_legal_mcp"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

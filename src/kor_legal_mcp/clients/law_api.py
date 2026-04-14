@@ -8,9 +8,9 @@ from typing import Any
 import httpx
 from lxml import etree
 
-from apt_legal_mcp.cache.memory_cache import MemoryCache, make_key
-from apt_legal_mcp.clients.article_number import article_matches, normalize_article_number
-from apt_legal_mcp.config import settings
+from kor_legal_mcp.cache.memory_cache import MemoryCache, make_key
+from kor_legal_mcp.clients.article_number import article_matches, normalize_article_number
+from kor_legal_mcp.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -72,13 +72,15 @@ class LawApiError(Exception):
 class LawApiClient:
     def __init__(
         self,
-        base_url: str | None = None,
+        search_url: str | None = None,
+        service_url: str | None = None,
         api_key: str | None = None,
         cache: MemoryCache | None = None,
         timeout: float | None = None,
         max_concurrency: int | None = None,
     ):
-        self._base_url = base_url or settings.law_api_base_url
+        self._search_url = search_url or settings.law_api_search_url
+        self._service_url = service_url or settings.law_api_service_url
         self._api_key = api_key or settings.law_api_key
         self._cache = cache or MemoryCache(
             max_items=settings.cache_max_items,
@@ -102,12 +104,15 @@ class LawApiClient:
             self._client = httpx.AsyncClient(timeout=self._timeout)
         return self._client
 
-    async def _get_xml(self, params: dict[str, str]) -> etree._Element:
+    async def _get_xml(
+        self, params: dict[str, str], endpoint: str = "service"
+    ) -> etree._Element:
+        url = self._search_url if endpoint == "search" else self._service_url
         params = {"OC": self._api_key, **params}
         client = self._ensure_client()
         async with self._sem:
             try:
-                resp = await client.get(self._base_url, params=params)
+                resp = await client.get(url, params=params)
                 resp.raise_for_status()
             except httpx.HTTPError as exc:
                 raise LawApiError(f"law.go.kr request failed: {exc}") from exc
@@ -138,7 +143,8 @@ class LawApiClient:
                 "type": "XML",
                 "query": query,
                 "display": str(max_results),
-            }
+            },
+            endpoint="search",
         )
         hits: list[LawSearchHit] = []
         for law_el in root.findall(".//law"):
@@ -163,7 +169,9 @@ class LawApiClient:
         if cached is not None:
             return cached
 
-        root = await self._get_xml({"target": "law", "MST": mst, "type": "XML"})
+        root = await self._get_xml(
+            {"target": "law", "MST": mst, "type": "XML"}, endpoint="service"
+        )
         law_name = (
             _text(root, ".//법령명_한글")
             or _text(root, ".//법령명한글")
@@ -242,8 +250,9 @@ class LawApiClient:
             "type": "XML",
             "query": query,
             "display": str(max_results),
+            "search": "2",  # 2 = 본문검색 (default 1 = 사건명만)
         }
-        root = await self._get_xml(params)
+        root = await self._get_xml(params, endpoint="search")
         hits: list[PrecedentHit] = []
         for prec_el in root.findall(".//prec"):
             case_id = (_text(prec_el, "판례일련번호") or "").strip()
@@ -278,7 +287,9 @@ class LawApiClient:
             return cached
 
         # law.go.kr uses ID or LID param depending on endpoint variant.
-        root = await self._get_xml({"target": "prec", "ID": case_id, "type": "XML"})
+        root = await self._get_xml(
+            {"target": "prec", "ID": case_id, "type": "XML"}, endpoint="service"
+        )
         node = root.find(".//prec") if root.tag != "prec" else root
         if node is None:
             node = root

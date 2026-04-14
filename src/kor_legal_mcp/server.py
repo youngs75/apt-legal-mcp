@@ -12,12 +12,11 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.routing import Mount, Route
 
-from apt_legal_mcp import __version__
-from apt_legal_mcp.cache.memory_cache import MemoryCache
-from apt_legal_mcp.clients.law_api import LawApiClient
-from apt_legal_mcp.config import settings
-from apt_legal_mcp.resources.dispute_types import DISPUTE_TYPES
-from apt_legal_mcp.tools import (
+from kor_legal_mcp import __version__
+from kor_legal_mcp.cache.memory_cache import MemoryCache
+from kor_legal_mcp.clients.law_api import LawApiClient
+from kor_legal_mcp.config import settings
+from kor_legal_mcp.tools import (
     compare_laws,
     get_law_article,
     get_precedent_detail,
@@ -25,11 +24,11 @@ from apt_legal_mcp.tools import (
     search_law,
     search_precedent,
 )
-from apt_legal_mcp.tools._common import ToolContext
+from kor_legal_mcp.tools._common import ToolContext
 
 logger = logging.getLogger(__name__)
 
-SERVER_NAME = "apt-legal-mcp"
+SERVER_NAME = "kor-legal-mcp"
 
 
 def _build_context() -> ToolContext:
@@ -47,7 +46,7 @@ def _json_dump(value: Any) -> str:
 
 def build_mcp(ctx: ToolContext | None = None) -> tuple[FastMCP, ToolContext]:
     ctx = ctx or _build_context()
-    mcp = FastMCP(SERVER_NAME, version=__version__)
+    mcp = FastMCP(SERVER_NAME)
 
     @mcp.tool(
         name="search_law",
@@ -143,11 +142,7 @@ def build_mcp(ctx: ToolContext | None = None) -> tuple[FastMCP, ToolContext]:
         )
         return _json_dump(output.model_dump())
 
-    @mcp.resource("apt-legal://guide/dispute-types")
-    async def _dispute_types_resource() -> str:
-        return _json_dump(DISPUTE_TYPES)
-
-    @mcp.resource("apt-legal://law/{law_name}/article/{article_number}")
+    @mcp.resource("kor-legal://law/{law_name}/article/{article_number}")
     async def _law_article_resource(law_name: str, article_number: str) -> str:
         try:
             output = await get_law_article.handle(
@@ -162,7 +157,7 @@ def build_mcp(ctx: ToolContext | None = None) -> tuple[FastMCP, ToolContext]:
             return f"[오류] {exc}"
         return f"{output.law_name} {output.article_number} {output.article_title}\n\n{output.full_text}"
 
-    @mcp.resource("apt-legal://precedent/{case_number}")
+    @mcp.resource("kor-legal://precedent/{case_number}")
     async def _precedent_resource(case_number: str) -> str:
         try:
             output = await get_precedent_detail.handle(ctx, {"case_number": case_number})
@@ -189,7 +184,7 @@ async def _root(_request: Request) -> JSONResponse:
         {
             "name": SERVER_NAME,
             "version": __version__,
-            "description": "한국 공동주택 관련 법령·판례·행정해석 조회 MCP 서버",
+            "description": "한국 법령·판례·행정해석 조회 범용 MCP 서버",
             "endpoints": {"mcp": "/mcp", "health": "/healthz"},
         }
     )

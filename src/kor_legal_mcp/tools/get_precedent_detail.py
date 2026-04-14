@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from apt_legal_mcp.clients.law_api import LawApiError
-from apt_legal_mcp.models.schemas import (
+from kor_legal_mcp.clients.law_api import LawApiError
+from kor_legal_mcp.models.schemas import (
     GetPrecedentDetailInput,
     GetPrecedentDetailOutput,
 )
-from apt_legal_mcp.tools._common import ToolContext, truncate
+from kor_legal_mcp.tools._common import ToolContext, truncate
 
 
 class PrecedentNotFound(Exception):

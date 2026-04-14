@@ -1,4 +1,4 @@
-from apt_legal_mcp.tools._common import (
+from kor_legal_mcp.tools._common import (
     extract_keywords,
     normalize_query,
     score_relevance,

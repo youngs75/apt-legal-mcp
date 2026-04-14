@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from apt_legal_mcp.models.schemas import (
+from kor_legal_mcp.models.schemas import (
     SearchInterpretationInput,
     SearchInterpretationOutput,
 )
-from apt_legal_mcp.tools._common import ToolContext
+from kor_legal_mcp.tools._common import ToolContext
 
 
 async def handle(ctx: ToolContext, payload: dict) -> SearchInterpretationOutput:

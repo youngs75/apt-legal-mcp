@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from apt_legal_mcp.cache.memory_cache import MemoryCache, make_key
+from kor_legal_mcp.cache.memory_cache import MemoryCache, make_key
 
 
 @pytest.mark.asyncio

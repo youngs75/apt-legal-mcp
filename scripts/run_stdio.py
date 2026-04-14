@@ -5,7 +5,7 @@
 """
 from __future__ import annotations
 
-from apt_legal_mcp.server import _MCP
+from kor_legal_mcp.server import _MCP
 
 
 def main() -> None:

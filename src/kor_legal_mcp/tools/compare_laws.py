@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import asyncio
 
-from apt_legal_mcp.clients.article_number import normalize_article_number
-from apt_legal_mcp.models.schemas import (
+from kor_legal_mcp.clients.article_number import normalize_article_number
+from kor_legal_mcp.models.schemas import (
     CompareLawsInput,
     CompareLawsOutput,
     ComparisonResultItem,
 )
-from apt_legal_mcp.tools._common import ToolContext
+from kor_legal_mcp.tools._common import ToolContext
 
 
 async def handle(ctx: ToolContext, payload: dict) -> CompareLawsOutput:

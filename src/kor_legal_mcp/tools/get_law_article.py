@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from apt_legal_mcp.cache.memory_cache import make_key
-from apt_legal_mcp.clients.article_number import normalize_article_number
-from apt_legal_mcp.models.schemas import GetLawArticleInput, GetLawArticleOutput
-from apt_legal_mcp.tools._common import ToolContext
+from kor_legal_mcp.cache.memory_cache import make_key
+from kor_legal_mcp.clients.article_number import normalize_article_number
+from kor_legal_mcp.models.schemas import GetLawArticleInput, GetLawArticleOutput
+from kor_legal_mcp.tools._common import ToolContext
 
 
 class ArticleNotFound(Exception):

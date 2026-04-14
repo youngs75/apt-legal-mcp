@@ -1,4 +1,4 @@
-from apt_legal_mcp.clients.article_number import article_matches, normalize_article_number
+from kor_legal_mcp.clients.article_number import article_matches, normalize_article_number
 
 
 def test_normalize_basic():

@@ -1,4 +1,6 @@
-# Apt-Legal MCP Server — Codex 작업지시서
+# Kor-Legal MCP Server — Codex 작업지시서
+
+> **⚠️ 범용화 노트 (2026-04-14):** 원래 `apt-legal-mcp`(공동주택 한정)로 작성되었으나, 현재는 `kor-legal-mcp`로 **도메인 무관 범용 한국 법령 MCP 서버**로 재정의되었다. 도메인 narrative는 historical context로 보존하되, 식별자/패키지명은 갱신된 상태다. 현 구조는 `AGENTS.md` 참조.
 
 ## 개요
 
@@ -11,7 +13,7 @@ MCP Python SDK 기반의 Streamable HTTP 서버로 구현하며, AWS EKS에 Dock
 ## 1. 프로젝트 구조
 
 ```
-apt-legal-mcp/
+kor-legal-mcp/
 ├── pyproject.toml
 ├── Dockerfile
 ├── k8s/
@@ -19,7 +21,7 @@ apt-legal-mcp/
 │   ├── service.yaml
 │   └── configmap.yaml
 ├── src/
-│   └── apt_legal_mcp/
+│   └── kor_legal_mcp/
 │       ├── __init__.py
 │       ├── server.py              # MCP 서버 진입점
 │       ├── tools/
@@ -66,7 +68,7 @@ apt-legal-mcp/
 ```toml
 # pyproject.toml
 [project]
-name = "apt-legal-mcp"
+name = "kor-legal-mcp"
 version = "1.0.0"
 requires-python = ">=3.12"
 dependencies = [
@@ -100,7 +102,7 @@ dev = [
 MCP 서버 메인 모듈.
 
 기능:
-1. MCP Server 인스턴스 생성 (name="apt-legal-mcp", version="1.0.0")
+1. MCP Server 인스턴스 생성 (name="kor-legal-mcp", version="1.0.0")
 2. 모든 Tools 등록 (6개)
 3. 모든 Resources 등록
 4. 모든 Prompts 등록
@@ -368,16 +370,16 @@ MCP ResourceTemplate 정의.
 
 등록할 리소스 템플릿:
 
-1. apt-legal://law/{law_name}/article/{article_number}
+1. kor-legal://law/{law_name}/article/{article_number}
    - URI 패턴 매칭으로 법령명과 조문번호 추출
    - get_law_article Tool과 동일한 로직 실행
    - 텍스트 형식으로 조문 전문 반환
 
-2. apt-legal://precedent/{case_number}
+2. kor-legal://precedent/{case_number}
    - 판례 상세 정보 반환
    - get_precedent_detail Tool과 동일한 로직
 
-3. apt-legal://guide/dispute-types
+3. kor-legal://guide/dispute-types
    - 지원하는 분쟁 유형 목록 반환 (정적 데이터)
    - 각 유형별 주요 적용 법령 포함
 """
@@ -487,7 +489,7 @@ COPY data/ data/
 RUN python data/seed_precedents.py
 
 EXPOSE 8001
-CMD ["python", "-m", "uvicorn", "apt_legal_mcp.server:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["python", "-m", "uvicorn", "kor_legal_mcp.server:app", "--host", "0.0.0.0", "--port", "8001"]
 ```
 
 ### 5.2 k8s/deployment.yaml
@@ -496,22 +498,22 @@ CMD ["python", "-m", "uvicorn", "apt_legal_mcp.server:app", "--host", "0.0.0.0",
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: apt-legal-mcp
+  name: kor-legal-mcp
   labels:
-    app: apt-legal-mcp
+    app: kor-legal-mcp
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: apt-legal-mcp
+      app: kor-legal-mcp
   template:
     metadata:
       labels:
-        app: apt-legal-mcp
+        app: kor-legal-mcp
     spec:
       containers:
-        - name: apt-legal-mcp
-          image: apt-legal-mcp:1.0.0
+        - name: kor-legal-mcp
+          image: kor-legal-mcp:1.0.0
           ports:
             - containerPort: 8001
           envFrom:
@@ -546,11 +548,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: apt-legal-mcp-svc
+  name: kor-legal-mcp-svc
 spec:
   type: ClusterIP
   selector:
-    app: apt-legal-mcp
+    app: kor-legal-mcp
   ports:
     - port: 8001
       targetPort: 8001

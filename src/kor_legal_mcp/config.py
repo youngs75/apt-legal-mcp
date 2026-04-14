@@ -11,7 +11,8 @@ load_dotenv()
 @dataclass(frozen=True)
 class Settings:
     law_api_key: str
-    law_api_base_url: str
+    law_api_search_url: str
+    law_api_service_url: str
     cache_ttl_hours: int
     cache_max_items: int
     server_port: int
@@ -22,8 +23,11 @@ class Settings:
     def from_env(cls) -> "Settings":
         return cls(
             law_api_key=os.getenv("LAW_API_KEY", ""),
-            law_api_base_url=os.getenv(
-                "LAW_API_BASE_URL", "http://www.law.go.kr/DRF/lawService.do"
+            law_api_search_url=os.getenv(
+                "LAW_API_SEARCH_URL", "http://www.law.go.kr/DRF/lawSearch.do"
+            ),
+            law_api_service_url=os.getenv(
+                "LAW_API_SERVICE_URL", "http://www.law.go.kr/DRF/lawService.do"
             ),
             cache_ttl_hours=int(os.getenv("CACHE_TTL_HOURS", "24")),
             cache_max_items=int(os.getenv("CACHE_MAX_ITEMS", "1000")),

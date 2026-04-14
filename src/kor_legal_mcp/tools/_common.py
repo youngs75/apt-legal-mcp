@@ -3,8 +3,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from apt_legal_mcp.cache.memory_cache import MemoryCache
-from apt_legal_mcp.clients.law_api import LawApiClient
+from kor_legal_mcp.cache.memory_cache import MemoryCache
+from kor_legal_mcp.clients.law_api import LawApiClient
 
 
 @dataclass
