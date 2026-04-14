@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import JSONResponse
@@ -46,7 +47,16 @@ def _json_dump(value: Any) -> str:
 
 def build_mcp(ctx: ToolContext | None = None) -> tuple[FastMCP, ToolContext]:
     ctx = ctx or _build_context()
-    mcp = FastMCP(SERVER_NAME)
+    # FastMCP defaults to DNS-rebinding protection that only allows loopback
+    # Host headers. We deploy behind an HTTPS reverse proxy (Samsung SDS CoE
+    # portal), so the protection is unnecessary and blocks all real traffic
+    # with 421 Misdirected Request. Disable it.
+    mcp = FastMCP(
+        SERVER_NAME,
+        transport_security=TransportSecuritySettings(
+            enable_dns_rebinding_protection=False
+        ),
+    )
 
     @mcp.tool(
         name="search_law",
