@@ -23,6 +23,7 @@ dev = [
     "pytest-asyncio>=0.23",
     "pytest-httpx>=0.30",
     "ruff>=0.5",
+    "anthropic>=0.40.0",  # for scripts/verify_via_claude.py — LLM↔MCP smoke test
 ]
 
 [project.scripts]
