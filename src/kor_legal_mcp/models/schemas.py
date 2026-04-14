@@ -1,14 +1,20 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, BeforeValidator, Field
 
 
 def _non_empty(v: str) -> str:
     if not v or not v.strip():
         raise ValueError("must not be empty")
     return v.strip()
+
+
+# Pydantic v2: using Annotated + BeforeValidator avoids the classmethod
+# pitfall of `field_validator(...)(lambda cls, v: ...)`, which silently
+# passes ValidationInfo as `v` and breaks at runtime.
+NonEmptyStr = Annotated[str, BeforeValidator(_non_empty)]
 
 
 class LawSearchResultItem(BaseModel):
@@ -20,11 +26,9 @@ class LawSearchResultItem(BaseModel):
 
 
 class SearchLawInput(BaseModel):
-    query: str
+    query: NonEmptyStr
     law_name: str | None = None
     max_results: int = Field(default=5, ge=1, le=20)
-
-    _v_query = field_validator("query")(lambda _cls, v: _non_empty(v))
 
 
 class SearchLawOutput(BaseModel):
@@ -33,12 +37,9 @@ class SearchLawOutput(BaseModel):
 
 
 class GetLawArticleInput(BaseModel):
-    law_name: str
-    article_number: str
+    law_name: NonEmptyStr
+    article_number: NonEmptyStr
     include_history: bool = False
-
-    _v_law = field_validator("law_name")(lambda _cls, v: _non_empty(v))
-    _v_art = field_validator("article_number")(lambda _cls, v: _non_empty(v))
 
 
 class AmendmentHistoryItem(BaseModel):
@@ -68,11 +69,9 @@ CourtLevel = Literal["대법원", "고등법원", "지방법원"]
 
 
 class SearchPrecedentInput(BaseModel):
-    query: str
+    query: NonEmptyStr
     court_level: str | None = None
     max_results: int = Field(default=5, ge=1, le=20)
-
-    _v_query = field_validator("query")(lambda _cls, v: _non_empty(v))
 
 
 class SearchPrecedentOutput(BaseModel):
@@ -81,9 +80,7 @@ class SearchPrecedentOutput(BaseModel):
 
 
 class GetPrecedentDetailInput(BaseModel):
-    case_number: str
-
-    _v_case = field_validator("case_number")(lambda _cls, v: _non_empty(v))
+    case_number: NonEmptyStr
 
 
 class GetPrecedentDetailOutput(BaseModel):
@@ -108,11 +105,9 @@ class InterpretationResultItem(BaseModel):
 
 
 class SearchInterpretationInput(BaseModel):
-    query: str
+    query: NonEmptyStr
     source: str | None = None
     max_results: int = Field(default=5, ge=1, le=20)
-
-    _v_query = field_validator("query")(lambda _cls, v: _non_empty(v))
 
 
 class SearchInterpretationOutput(BaseModel):
@@ -121,11 +116,8 @@ class SearchInterpretationOutput(BaseModel):
 
 
 class ComparisonItem(BaseModel):
-    law_name: str
-    article_number: str
-
-    _v_law = field_validator("law_name")(lambda _cls, v: _non_empty(v))
-    _v_art = field_validator("article_number")(lambda _cls, v: _non_empty(v))
+    law_name: NonEmptyStr
+    article_number: NonEmptyStr
 
 
 class CompareLawsInput(BaseModel):
