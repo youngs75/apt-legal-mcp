@@ -110,12 +110,26 @@ class LawApiClient:
         url = self._search_url if endpoint == "search" else self._service_url
         params = {"OC": self._api_key, **params}
         client = self._ensure_client()
+        last_exc: Exception | None = None
         async with self._sem:
-            try:
-                resp = await client.get(url, params=params)
-                resp.raise_for_status()
-            except httpx.HTTPError as exc:
-                raise LawApiError(f"law.go.kr request failed: {exc}") from exc
+            for attempt in range(3):
+                try:
+                    resp = await client.get(url, params=params)
+                    resp.raise_for_status()
+                    last_exc = None
+                    break
+                except httpx.HTTPError as exc:
+                    last_exc = exc
+                    if attempt < 2:
+                        await asyncio.sleep(0.3 * (attempt + 1))
+                        continue
+        if last_exc is not None:
+            # Some httpx exceptions (RemoteProtocolError, ConnectError) have
+            # an empty str() — include the class name so logs are diagnosable.
+            raise LawApiError(
+                f"law.go.kr request failed [{type(last_exc).__name__}]: "
+                f"{last_exc!r}"
+            ) from last_exc
         raw = resp.content
         # Encoding fallback: try UTF-8 then EUC-KR.
         text: str
@@ -336,11 +350,16 @@ class LawApiClient:
         await asyncio.gather(*(_one(n) for n in WARMUP_LAWS))
 
     async def ping(self) -> bool:
-        try:
-            await self.search_laws("공동주택관리법", max_results=1)
-            return True
-        except Exception:  # noqa: BLE001
-            return False
+        # Try several short queries; succeed if ANY returns. Avoids flaky
+        # single-query false negatives in environments with intermittent
+        # network to law.go.kr (observed on EKS).
+        for query in ("민법", "공동주택관리법", "주택법"):
+            try:
+                await self.search_laws(query, max_results=1)
+                return True
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("ping query %r failed: %r", query, exc)
+        return False
 
 
 def _text(el: etree._Element, path: str) -> str | None:

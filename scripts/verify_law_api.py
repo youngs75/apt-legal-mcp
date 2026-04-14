@@ -3,10 +3,11 @@ from __future__ import annotations
 
 import asyncio
 import sys
+import traceback
 
 import httpx
 
-from kor_legal_mcp.clients.law_api import LawApiClient
+from kor_legal_mcp.clients.law_api import WARMUP_LAWS, LawApiClient
 from kor_legal_mcp.config import settings
 
 
@@ -46,6 +47,39 @@ async def via_client() -> None:
             print(f"  ERROR: {exc!r}")
 
 
+async def reproduce_warmup() -> None:
+    print(f"\n[5] Reproduce warmup (concurrent gather over {len(WARMUP_LAWS)} laws)")
+    async with LawApiClient() as client:
+        async def _one(name: str) -> tuple[str, str]:
+            try:
+                hits = await client.search_laws(name, max_results=1)
+                return name, f"OK ({len(hits)} hits)"
+            except Exception as exc:
+                return name, f"FAIL [{type(exc).__name__}] {exc!r}"
+
+        results = await asyncio.gather(*(_one(n) for n in WARMUP_LAWS))
+        for name, status in results:
+            print(f"  - {name}: {status}")
+
+
+async def reproduce_warmup_sequential() -> None:
+    print(f"\n[6] Sequential (no concurrency) over same {len(WARMUP_LAWS)} laws")
+    async with LawApiClient() as client:
+        for name in WARMUP_LAWS:
+            try:
+                hits = await client.search_laws(name, max_results=1)
+                print(f"  - {name}: OK ({len(hits)} hits)")
+            except Exception as exc:
+                print(f"  - {name}: FAIL [{type(exc).__name__}] {exc!r}")
+
+
+async def ping_check() -> None:
+    print("\n[7] LawApiClient.ping()")
+    async with LawApiClient() as client:
+        ok = await client.ping()
+        print(f"  ping={ok}")
+
+
 async def main() -> None:
     print(f"LAW_API_KEY={settings.law_api_key!r}")
     if not settings.law_api_key:
@@ -53,6 +87,9 @@ async def main() -> None:
         sys.exit(1)
     await raw_search(settings.law_api_key)
     await via_client()
+    await reproduce_warmup()
+    await reproduce_warmup_sequential()
+    await ping_check()
 
 
 if __name__ == "__main__":

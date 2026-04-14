@@ -191,25 +191,33 @@ async def _root(_request: Request) -> JSONResponse:
 
 
 _MCP, _CTX = build_mcp()
+_INNER_MCP_APP = _MCP.streamable_http_app()
 
 
 @asynccontextmanager
-async def _lifespan(_app: Starlette):
-    try:
-        await asyncio.wait_for(_CTX.law_api.warmup(), timeout=10)
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("warmup skipped: %s", exc)
-    try:
-        yield
-    finally:
-        await _CTX.law_api.__aexit__(None, None, None)
+async def _lifespan(app: Starlette):
+    # Delegate to the inner FastMCP app's lifespan first — it starts the
+    # StreamableHTTPSessionManager task group. Without this the /mcp route
+    # raises "Task group is not initialized" on every request.
+    async with _INNER_MCP_APP.router.lifespan_context(app):
+        try:
+            await asyncio.wait_for(_CTX.law_api.warmup(), timeout=10)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("warmup skipped: %s", exc)
+        try:
+            yield
+        finally:
+            await _CTX.law_api.__aexit__(None, None, None)
 
 
 app = Starlette(
     routes=[
         Route("/", _root),
         Route("/healthz", _healthz),
-        Mount("/mcp", app=_MCP.streamable_http_app()),
+        # FastMCP's streamable_http_app() already exposes /mcp internally;
+        # mount it at root so its /mcp route is reachable directly without
+        # double-prefixing (which would cause a 307 redirect).
+        Mount("/", app=_INNER_MCP_APP),
     ],
     lifespan=_lifespan,
 )
