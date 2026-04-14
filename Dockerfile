@@ -22,11 +22,13 @@ RUN useradd --create-home --uid 1000 app \
     && chown -R app:app /app
 USER app
 
-ENV PATH="/app/.venv/bin:$PATH"
+ENV PATH="/app/.venv/bin:$PATH" \
+    PORT=8080
 
-EXPOSE 8001
+EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8001/healthz', timeout=3).status==200 else 1)"
+    CMD python -c "import os,urllib.request,sys; port=os.environ.get('PORT','8080'); sys.exit(0 if urllib.request.urlopen(f'http://127.0.0.1:{port}/healthz', timeout=3).status==200 else 1)"
 
-CMD ["uvicorn", "kor_legal_mcp.server:app", "--host", "0.0.0.0", "--port", "8001"]
+# Shell form so ${PORT} is expanded at runtime (default 8080, override via env)
+CMD uvicorn kor_legal_mcp.server:app --host 0.0.0.0 --port ${PORT:-8080}
