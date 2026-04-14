@@ -73,15 +73,26 @@ kor-legal-mcp/
 - 자동/단계별 저장은 하지 않는다.
 - 새 파일에는 프로젝트 개요, 최근 작업 내역, 현재 상태, 다음 단계, 중요 참고사항을 포함한다.
 
-## 제공 MCP Tools (6종)
-| Tool | 용도 |
-|------|------|
-| `search_law` | 키워드 기반 법령 조문 검색 |
-| `get_law_article` | 특정 조문 전문 조회 |
-| `search_precedent` | 판례 검색 (본문검색, `search=2`) |
-| `get_precedent_detail` | 판례 상세 조회 |
-| `search_interpretation` | 행정해석·유권해석 검색 (현재 스텁) |
-| `compare_laws` | 복수 조문 비교 조회 |
+## 제공 MCP Tools (15종)
+| Tool | 용도 | law.go.kr target |
+|------|------|------|
+| `search_law` | 키워드 기반 법령 조문 검색 | `law` |
+| `get_law_article` | 특정 조문 전문 조회 | `law` |
+| `search_precedent` | 판례 검색 (본문검색, `search=2`) | `prec` |
+| `get_precedent_detail` | 판례 상세 조회 | `prec` |
+| `compare_laws` | 복수 조문 비교 조회 | `law` |
+| `search_interpretation` | 법령해석례(법제처·부처 유권해석) 검색 | `expc` |
+| `get_interpretation_detail` | 법령해석례 상세(질의요지·회답·이유) | `expc` |
+| `search_constitutional_decision` | 헌법재판소 결정례 검색 | `detc` |
+| `get_constitutional_decision_detail` | 헌재 결정례 상세(판시사항·결정요지·전문) | `detc` |
+| `search_admrule` | 행정규칙(훈령·예규·고시) 검색 | `admrul` |
+| `get_admrule_detail` | 행정규칙 상세(조문 전체) | `admrul` |
+| `search_ordinance` | 자치법규(조례·규칙) 검색 — `region` 필터 지원 | `ordin` |
+| `get_ordinance_detail` | 자치법규 상세(조문 전체) | `ordin` |
+| `search_treaty` | 조약(양자·다자) 검색 | `trty` |
+| `get_treaty_detail` | 조약 상세(조약문 본문 포함) | `trty` |
+
+> `search_ordinance`의 `region` 파라미터는 **일반 조회**용 지자체명 부분 일치 필터일 뿐이며, 특정 단지/지역 RAG는 여전히 `apt-domain-mcp`의 책임 영역이다.
 
 세부 입출력 스키마·에러 코드·캐싱 전략은 `docs/02_mcp_server_codex_spec.md` 참조.
 (문서의 옛 명칭 `apt-legal-mcp`는 점진적으로 교체 예정)

@@ -19,11 +19,20 @@ from kor_legal_mcp.clients.law_api import LawApiClient
 from kor_legal_mcp.config import settings
 from kor_legal_mcp.tools import (
     compare_laws,
+    get_admrule_detail,
+    get_constitutional_decision_detail,
+    get_interpretation_detail,
     get_law_article,
+    get_ordinance_detail,
     get_precedent_detail,
+    get_treaty_detail,
+    search_admrule,
+    search_constitutional_decision,
     search_interpretation,
     search_law,
+    search_ordinance,
     search_precedent,
+    search_treaty,
 )
 from kor_legal_mcp.tools._common import ToolContext
 
@@ -150,6 +159,113 @@ def build_mcp(ctx: ToolContext | None = None) -> tuple[FastMCP, ToolContext]:
         output = await compare_laws.handle(
             ctx, {"comparisons": comparisons, "focus": focus}
         )
+        return _json_dump(output.model_dump())
+
+    @mcp.tool(
+        name="get_interpretation_detail",
+        description="법령해석례(법제처·부처 유권해석) 상세를 조회합니다. interpretation_id(법령해석례일련번호)를 인자로 받습니다.",
+    )
+    async def _get_interpretation_detail(interpretation_id: str) -> str:
+        try:
+            output = await get_interpretation_detail.handle(
+                ctx, {"interpretation_id": interpretation_id}
+            )
+        except get_interpretation_detail.InterpretationNotFound as exc:
+            return _json_dump({"error": "INTERPRETATION_NOT_FOUND", "message": str(exc)})
+        return _json_dump(output.model_dump())
+
+    @mcp.tool(
+        name="search_constitutional_decision",
+        description="키워드로 헌법재판소 결정례를 검색합니다.",
+    )
+    async def _search_constitutional_decision(
+        query: str, max_results: int = 5
+    ) -> str:
+        output = await search_constitutional_decision.handle(
+            ctx, {"query": query, "max_results": max_results}
+        )
+        return _json_dump(output.model_dump())
+
+    @mcp.tool(
+        name="get_constitutional_decision_detail",
+        description="헌법재판소 결정례 상세(판시사항·결정요지·전문)를 조회합니다. decision_id(헌재결정례일련번호)를 인자로 받습니다.",
+    )
+    async def _get_constitutional_decision_detail(decision_id: str) -> str:
+        try:
+            output = await get_constitutional_decision_detail.handle(
+                ctx, {"decision_id": decision_id}
+            )
+        except get_constitutional_decision_detail.ConstitutionalDecisionNotFound as exc:
+            return _json_dump(
+                {"error": "CONSTITUTIONAL_DECISION_NOT_FOUND", "message": str(exc)}
+            )
+        return _json_dump(output.model_dump())
+
+    @mcp.tool(
+        name="search_admrule",
+        description="키워드로 행정규칙(훈령·예규·고시)을 검색합니다.",
+    )
+    async def _search_admrule(query: str, max_results: int = 5) -> str:
+        output = await search_admrule.handle(
+            ctx, {"query": query, "max_results": max_results}
+        )
+        return _json_dump(output.model_dump())
+
+    @mcp.tool(
+        name="get_admrule_detail",
+        description="행정규칙 상세(조문 전체)를 조회합니다. rule_id(행정규칙일련번호)를 인자로 받습니다.",
+    )
+    async def _get_admrule_detail(rule_id: str) -> str:
+        try:
+            output = await get_admrule_detail.handle(ctx, {"rule_id": rule_id})
+        except get_admrule_detail.AdmRuleNotFound as exc:
+            return _json_dump({"error": "ADMRULE_NOT_FOUND", "message": str(exc)})
+        return _json_dump(output.model_dump())
+
+    @mcp.tool(
+        name="search_ordinance",
+        description="키워드로 지방자치단체 자치법규(조례·규칙)를 검색합니다. region 파라미터로 지자체명 부분 일치 필터링 가능 (예: '서울특별시', '경기도').",
+    )
+    async def _search_ordinance(
+        query: str, region: str | None = None, max_results: int = 5
+    ) -> str:
+        output = await search_ordinance.handle(
+            ctx, {"query": query, "region": region, "max_results": max_results}
+        )
+        return _json_dump(output.model_dump())
+
+    @mcp.tool(
+        name="get_ordinance_detail",
+        description="자치법규 상세(조문 전체)를 조회합니다. ordinance_id(자치법규ID)를 인자로 받습니다.",
+    )
+    async def _get_ordinance_detail(ordinance_id: str) -> str:
+        try:
+            output = await get_ordinance_detail.handle(
+                ctx, {"ordinance_id": ordinance_id}
+            )
+        except get_ordinance_detail.OrdinanceNotFound as exc:
+            return _json_dump({"error": "ORDINANCE_NOT_FOUND", "message": str(exc)})
+        return _json_dump(output.model_dump())
+
+    @mcp.tool(
+        name="search_treaty",
+        description="키워드로 대한민국이 체결한 조약(양자·다자)을 검색합니다.",
+    )
+    async def _search_treaty(query: str, max_results: int = 5) -> str:
+        output = await search_treaty.handle(
+            ctx, {"query": query, "max_results": max_results}
+        )
+        return _json_dump(output.model_dump())
+
+    @mcp.tool(
+        name="get_treaty_detail",
+        description="조약 상세(조약문 본문 포함)를 조회합니다. treaty_id(조약일련번호)를 인자로 받습니다.",
+    )
+    async def _get_treaty_detail(treaty_id: str) -> str:
+        try:
+            output = await get_treaty_detail.handle(ctx, {"treaty_id": treaty_id})
+        except get_treaty_detail.TreatyNotFound as exc:
+            return _json_dump({"error": "TREATY_NOT_FOUND", "message": str(exc)})
         return _json_dump(output.model_dump())
 
     @mcp.resource("kor-legal://law/{law_name}/article/{article_number}")

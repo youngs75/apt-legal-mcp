@@ -65,6 +65,144 @@ class PrecedentFull:
     related_laws: list[str]
 
 
+# --- 법령해석례 (법제처·부처 유권해석) ---
+@dataclass
+class InterpretationHit:
+    interpretation_id: str    # 법령해석례일련번호
+    case_name: str            # 안건명
+    case_number: str          # 안건번호
+    inquiry_agency: str       # 질의기관명
+    reply_agency: str         # 회신기관명
+    reply_date: str           # 회신일자
+
+
+@dataclass
+class InterpretationFull:
+    interpretation_id: str
+    case_name: str
+    case_number: str
+    interpretation_date: str  # 해석일자
+    interpretation_agency: str  # 해석기관명
+    inquiry_agency: str
+    inquiry_summary: str      # 질의요지
+    answer: str               # 회답
+    reasoning: str            # 이유
+
+
+# --- 헌법재판소 결정례 ---
+@dataclass
+class ConstitutionalHit:
+    decision_id: str          # 헌재결정례일련번호
+    case_number: str          # 사건번호
+    case_name: str            # 사건명
+    decision_date: str        # 종국일자
+
+
+@dataclass
+class ConstitutionalFull:
+    decision_id: str
+    case_number: str
+    case_name: str
+    decision_date: str
+    case_type: str            # 사건종류명
+    holding: str              # 판시사항
+    summary: str              # 결정요지
+    full_text: str            # 전문
+    related_laws: str         # 참조조문
+    related_precedents: str   # 참조판례
+    target_laws: str          # 심판대상조문
+
+
+# --- 행정규칙 (훈령·예규·고시) ---
+@dataclass
+class AdmRuleHit:
+    rule_id: str              # 행정규칙일련번호
+    rule_name: str            # 행정규칙명
+    rule_type: str            # 행정규칙종류
+    issued_date: str          # 발령일자
+    issued_number: str        # 발령번호
+    agency: str               # 소관부처명
+    enforcement_date: str     # 시행일자
+    is_current: str           # 현행여부 (Y/N)
+
+
+@dataclass
+class AdmRuleArticle:
+    content: str              # 조문내용 (단일 문자열)
+
+
+@dataclass
+class AdmRuleFull:
+    rule_id: str
+    rule_name: str
+    rule_type: str
+    issued_date: str
+    issued_number: str
+    agency: str
+    department: str           # 담당부서기관명
+    enforcement_date: str
+    articles: list[str]       # 조문내용[]
+    amendment_reason: str     # 제개정이유
+
+
+# --- 자치법규 (지자체 조례·규칙) ---
+@dataclass
+class OrdinanceHit:
+    ordinance_id: str         # 자치법규ID (detail에서 ID 파라미터로 사용)
+    ordinance_serial: str     # 자치법규일련번호
+    ordinance_name: str       # 자치법규명
+    local_gov: str            # 지자체기관명
+    ordinance_type: str       # 자치법규종류 (조례/규칙)
+    promulgation_date: str    # 공포일자
+    enforcement_date: str     # 시행일자
+
+
+@dataclass
+class OrdinanceArticle:
+    article_number: str       # 조번호
+    article_title: str        # 조제목
+    article_text: str         # 조내용
+
+
+@dataclass
+class OrdinanceFull:
+    ordinance_id: str
+    ordinance_serial: str
+    ordinance_name: str
+    local_gov: str
+    ordinance_type: str
+    promulgation_date: str
+    enforcement_date: str
+    department: str           # 담당부서명
+    amendment_type: str       # 제개정정보
+    articles: list[OrdinanceArticle]
+
+
+# --- 조약 ---
+@dataclass
+class TreatyHit:
+    treaty_id: str            # 조약일련번호
+    treaty_name: str          # 조약명
+    treaty_type: str          # 조약구분명
+    effective_date: str       # 발효일자
+    signed_date: str          # 서명일자
+    treaty_number: str        # 조약번호
+
+
+@dataclass
+class TreatyFull:
+    treaty_id: str
+    treaty_name_ko: str       # 조약명_한글
+    treaty_name_en: str       # 조약명_영문
+    treaty_type: str
+    treaty_number: str
+    effective_date: str
+    signed_date: str
+    category: str             # 다자조약분야명
+    depositary: str           # 기탁처
+    content: str              # 조약내용
+
+
 class LawApiError(Exception):
     pass
 
@@ -345,6 +483,381 @@ class LawApiClient:
             reasoning=reasoning,
             ruling=ruling,
             related_laws=related_laws,
+        )
+        await self._cache.set(key, detail, ttl_seconds=7 * 24 * 3600)
+        return detail
+
+    # ---------------------------------------------------------------
+    # 법령해석례 (expc)
+    # ---------------------------------------------------------------
+    async def search_interpretations(
+        self, query: str, max_results: int = 5
+    ) -> list[InterpretationHit]:
+        key = make_key(
+            "law_api.search_interpretations", query=query, max_results=max_results
+        )
+        cached = await self._cache.get(key)
+        if cached is not None:
+            return cached
+
+        root = await self._get_xml(
+            {
+                "target": "expc",
+                "type": "XML",
+                "query": query,
+                "display": str(max_results),
+            },
+            endpoint="search",
+        )
+        hits: list[InterpretationHit] = []
+        for el in root.findall(".//expc"):
+            iid = (_text(el, "법령해석례일련번호") or "").strip()
+            if not iid:
+                continue
+            hits.append(
+                InterpretationHit(
+                    interpretation_id=iid,
+                    case_name=(_text(el, "안건명") or "").strip(),
+                    case_number=(_text(el, "안건번호") or "").strip(),
+                    inquiry_agency=(_text(el, "질의기관명") or "").strip(),
+                    reply_agency=(_text(el, "회신기관명") or "").strip(),
+                    reply_date=(_text(el, "회신일자") or "").strip(),
+                )
+            )
+        await self._cache.set(key, hits)
+        return hits
+
+    async def get_interpretation_detail(
+        self, interpretation_id: str
+    ) -> InterpretationFull | None:
+        key = make_key("law_api.get_interpretation_detail", id=interpretation_id)
+        cached = await self._cache.get(key)
+        if cached is not None:
+            return cached
+
+        root = await self._get_xml(
+            {"target": "expc", "ID": interpretation_id, "type": "XML"},
+            endpoint="service",
+        )
+        iid = (_text(root, ".//법령해석례일련번호") or "").strip()
+        if not iid:
+            return None
+        detail = InterpretationFull(
+            interpretation_id=iid,
+            case_name=(_text(root, ".//안건명") or "").strip(),
+            case_number=(_text(root, ".//안건번호") or "").strip(),
+            interpretation_date=(_text(root, ".//해석일자") or "").strip(),
+            interpretation_agency=(_text(root, ".//해석기관명") or "").strip(),
+            inquiry_agency=(_text(root, ".//질의기관명") or "").strip(),
+            inquiry_summary=(_text(root, ".//질의요지") or "").strip(),
+            answer=(_text(root, ".//회답") or "").strip(),
+            reasoning=(_text(root, ".//이유") or "").strip(),
+        )
+        await self._cache.set(key, detail, ttl_seconds=7 * 24 * 3600)
+        return detail
+
+    # ---------------------------------------------------------------
+    # 헌법재판소 결정례 (detc)
+    # ---------------------------------------------------------------
+    async def search_constitutional_decisions(
+        self, query: str, max_results: int = 5
+    ) -> list[ConstitutionalHit]:
+        key = make_key(
+            "law_api.search_constitutional_decisions",
+            query=query,
+            max_results=max_results,
+        )
+        cached = await self._cache.get(key)
+        if cached is not None:
+            return cached
+
+        root = await self._get_xml(
+            {
+                "target": "detc",
+                "type": "XML",
+                "query": query,
+                "display": str(max_results),
+            },
+            endpoint="search",
+        )
+        hits: list[ConstitutionalHit] = []
+        for el in root.findall(".//Detc"):
+            did = (_text(el, "헌재결정례일련번호") or "").strip()
+            if not did:
+                continue
+            hits.append(
+                ConstitutionalHit(
+                    decision_id=did,
+                    case_number=(_text(el, "사건번호") or "").strip(),
+                    case_name=(_text(el, "사건명") or "").strip(),
+                    decision_date=(_text(el, "종국일자") or "").strip(),
+                )
+            )
+        await self._cache.set(key, hits)
+        return hits
+
+    async def get_constitutional_decision_detail(
+        self, decision_id: str
+    ) -> ConstitutionalFull | None:
+        key = make_key("law_api.get_constitutional_decision_detail", id=decision_id)
+        cached = await self._cache.get(key)
+        if cached is not None:
+            return cached
+
+        root = await self._get_xml(
+            {"target": "detc", "ID": decision_id, "type": "XML"},
+            endpoint="service",
+        )
+        did = (_text(root, ".//헌재결정례일련번호") or "").strip()
+        if not did:
+            return None
+        detail = ConstitutionalFull(
+            decision_id=did,
+            case_number=(_text(root, ".//사건번호") or "").strip(),
+            case_name=(_text(root, ".//사건명") or "").strip(),
+            decision_date=(_text(root, ".//종국일자") or "").strip(),
+            case_type=(_text(root, ".//사건종류명") or "").strip(),
+            holding=(_text(root, ".//판시사항") or "").strip(),
+            summary=(_text(root, ".//결정요지") or "").strip(),
+            full_text=(_text(root, ".//전문") or "").strip(),
+            related_laws=(_text(root, ".//참조조문") or "").strip(),
+            related_precedents=(_text(root, ".//참조판례") or "").strip(),
+            target_laws=(_text(root, ".//심판대상조문") or "").strip(),
+        )
+        await self._cache.set(key, detail, ttl_seconds=7 * 24 * 3600)
+        return detail
+
+    # ---------------------------------------------------------------
+    # 행정규칙 (admrul)
+    # ---------------------------------------------------------------
+    async def search_admrules(
+        self, query: str, max_results: int = 5
+    ) -> list[AdmRuleHit]:
+        key = make_key("law_api.search_admrules", query=query, max_results=max_results)
+        cached = await self._cache.get(key)
+        if cached is not None:
+            return cached
+
+        root = await self._get_xml(
+            {
+                "target": "admrul",
+                "type": "XML",
+                "query": query,
+                "display": str(max_results),
+            },
+            endpoint="search",
+        )
+        hits: list[AdmRuleHit] = []
+        for el in root.findall(".//admrul"):
+            rid = (_text(el, "행정규칙일련번호") or "").strip()
+            if not rid:
+                continue
+            hits.append(
+                AdmRuleHit(
+                    rule_id=rid,
+                    rule_name=(_text(el, "행정규칙명") or "").strip(),
+                    rule_type=(_text(el, "행정규칙종류") or "").strip(),
+                    issued_date=(_text(el, "발령일자") or "").strip(),
+                    issued_number=(_text(el, "발령번호") or "").strip(),
+                    agency=(_text(el, "소관부처명") or "").strip(),
+                    enforcement_date=(_text(el, "시행일자") or "").strip(),
+                    is_current=(_text(el, "현행연혁구분") or "").strip(),
+                )
+            )
+        await self._cache.set(key, hits)
+        return hits
+
+    async def get_admrule_detail(self, rule_id: str) -> AdmRuleFull | None:
+        key = make_key("law_api.get_admrule_detail", id=rule_id)
+        cached = await self._cache.get(key)
+        if cached is not None:
+            return cached
+
+        root = await self._get_xml(
+            {"target": "admrul", "ID": rule_id, "type": "XML"}, endpoint="service"
+        )
+        basic = root.find(".//행정규칙기본정보")
+        if basic is None:
+            return None
+        rid = (_text(basic, "행정규칙일련번호") or "").strip()
+        if not rid:
+            return None
+        articles: list[str] = []
+        for el in root.findall(".//조문내용"):
+            if el.text and el.text.strip():
+                articles.append(el.text.strip())
+        detail = AdmRuleFull(
+            rule_id=rid,
+            rule_name=(_text(basic, "행정규칙명") or "").strip(),
+            rule_type=(_text(basic, "행정규칙종류") or "").strip(),
+            issued_date=(_text(basic, "발령일자") or "").strip(),
+            issued_number=(_text(basic, "발령번호") or "").strip(),
+            agency=(_text(basic, "소관부처명") or "").strip(),
+            department=(_text(basic, "담당부서기관명") or "").strip(),
+            enforcement_date=(_text(basic, "시행일자") or "").strip(),
+            articles=articles,
+            amendment_reason=(_text(root, ".//제개정이유") or "").strip(),
+        )
+        await self._cache.set(key, detail, ttl_seconds=7 * 24 * 3600)
+        return detail
+
+    # ---------------------------------------------------------------
+    # 자치법규 (ordin)
+    # ---------------------------------------------------------------
+    async def search_ordinances(
+        self, query: str, region: str | None = None, max_results: int = 5
+    ) -> list[OrdinanceHit]:
+        key = make_key(
+            "law_api.search_ordinances",
+            query=query,
+            region=region,
+            max_results=max_results,
+        )
+        cached = await self._cache.get(key)
+        if cached is not None:
+            return cached
+
+        root = await self._get_xml(
+            {
+                "target": "ordin",
+                "type": "XML",
+                "query": query,
+                "display": str(max_results),
+            },
+            endpoint="search",
+        )
+        hits: list[OrdinanceHit] = []
+        for el in root.findall(".//law"):
+            oid = (_text(el, "자치법규ID") or "").strip()
+            if not oid:
+                continue
+            local_gov = (_text(el, "지자체기관명") or "").strip()
+            if region and region not in local_gov:
+                continue
+            hits.append(
+                OrdinanceHit(
+                    ordinance_id=oid,
+                    ordinance_serial=(_text(el, "자치법규일련번호") or "").strip(),
+                    ordinance_name=(_text(el, "자치법규명") or "").strip(),
+                    local_gov=local_gov,
+                    ordinance_type=(_text(el, "자치법규종류") or "").strip(),
+                    promulgation_date=(_text(el, "공포일자") or "").strip(),
+                    enforcement_date=(_text(el, "시행일자") or "").strip(),
+                )
+            )
+        await self._cache.set(key, hits)
+        return hits
+
+    async def get_ordinance_detail(self, ordinance_id: str) -> OrdinanceFull | None:
+        key = make_key("law_api.get_ordinance_detail", id=ordinance_id)
+        cached = await self._cache.get(key)
+        if cached is not None:
+            return cached
+
+        root = await self._get_xml(
+            {"target": "ordin", "ID": ordinance_id, "type": "XML"},
+            endpoint="service",
+        )
+        basic = root.find(".//자치법규기본정보")
+        if basic is None:
+            return None
+        oid = (_text(basic, "자치법규ID") or "").strip() or ordinance_id
+        articles: list[OrdinanceArticle] = []
+        for jo in root.findall(".//조문/조"):
+            num = (_text(jo, "조번호") or "").strip()
+            title = (_text(jo, "조제목") or "").strip()
+            content = (_text(jo, "조내용") or "").strip()
+            if not (num or title or content):
+                continue
+            articles.append(
+                OrdinanceArticle(
+                    article_number=num,
+                    article_title=title,
+                    article_text=content,
+                )
+            )
+        detail = OrdinanceFull(
+            ordinance_id=oid,
+            ordinance_serial=(_text(basic, "자치법규일련번호") or "").strip(),
+            ordinance_name=(_text(basic, "자치법규명") or "").strip(),
+            local_gov=(_text(basic, "지자체기관명") or "").strip(),
+            ordinance_type=(_text(basic, "자치법규종류") or "").strip(),
+            promulgation_date=(_text(basic, "공포일자") or "").strip(),
+            enforcement_date=(_text(basic, "시행일자") or "").strip(),
+            department=(_text(basic, "담당부서명") or "").strip(),
+            amendment_type=(_text(basic, "제개정정보") or "").strip(),
+            articles=articles,
+        )
+        await self._cache.set(key, detail, ttl_seconds=7 * 24 * 3600)
+        return detail
+
+    # ---------------------------------------------------------------
+    # 조약 (trty)
+    # ---------------------------------------------------------------
+    async def search_treaties(
+        self, query: str, max_results: int = 5
+    ) -> list[TreatyHit]:
+        key = make_key("law_api.search_treaties", query=query, max_results=max_results)
+        cached = await self._cache.get(key)
+        if cached is not None:
+            return cached
+
+        root = await self._get_xml(
+            {
+                "target": "trty",
+                "type": "XML",
+                "query": query,
+                "display": str(max_results),
+            },
+            endpoint="search",
+        )
+        hits: list[TreatyHit] = []
+        for el in root.findall(".//Trty"):
+            tid = (_text(el, "조약일련번호") or "").strip()
+            if not tid:
+                continue
+            hits.append(
+                TreatyHit(
+                    treaty_id=tid,
+                    treaty_name=(_text(el, "조약명") or "").strip(),
+                    treaty_type=(_text(el, "조약구분명") or "").strip(),
+                    effective_date=(_text(el, "발효일자") or "").strip(),
+                    signed_date=(_text(el, "서명일자") or "").strip(),
+                    treaty_number=(_text(el, "조약번호") or "").strip(),
+                )
+            )
+        await self._cache.set(key, hits)
+        return hits
+
+    async def get_treaty_detail(self, treaty_id: str) -> TreatyFull | None:
+        key = make_key("law_api.get_treaty_detail", id=treaty_id)
+        cached = await self._cache.get(key)
+        if cached is not None:
+            return cached
+
+        root = await self._get_xml(
+            {"target": "trty", "ID": treaty_id, "type": "XML"}, endpoint="service"
+        )
+        basic = root.find(".//조약기본정보")
+        if basic is None:
+            return None
+        tid = (_text(basic, "조약일련번호") or "").strip()
+        if not tid:
+            return None
+        extra = root.find(".//추가정보")
+        content_el = root.find(".//조약내용/조약내용")
+        content = (content_el.text or "").strip() if content_el is not None else ""
+        detail = TreatyFull(
+            treaty_id=tid,
+            treaty_name_ko=(_text(basic, "조약명_한글") or _text(basic, "조약명") or "").strip(),
+            treaty_name_en=(_text(basic, "조약명_영문") or "").strip(),
+            treaty_type=(_text(basic, "조약구분명") or "").strip(),
+            treaty_number=(_text(basic, "조약번호") or "").strip(),
+            effective_date=(_text(basic, "발효일자") or "").strip(),
+            signed_date=(_text(basic, "서명일자") or "").strip(),
+            category=(_text(extra, "다자조약분야명") or "").strip() if extra is not None else "",
+            depositary=(_text(extra, "기탁처") or "").strip() if extra is not None else "",
+            content=content,
         )
         await self._cache.set(key, detail, ttl_seconds=7 * 24 * 3600)
         return detail

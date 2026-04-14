@@ -12,3 +12,4 @@ data/precedents.db
 dist/
 build/
 .claude/
+probe_out/
