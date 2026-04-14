@@ -11,7 +11,6 @@ from kor_legal_mcp.tools._common import (
     ToolContext,
     extract_keywords,
     normalize_query,
-    truncate,
 )
 
 COURT_LEVEL_MAP = {
@@ -70,7 +69,7 @@ async def handle(ctx: ToolContext, payload: dict) -> SearchPrecedentOutput:
             case_number=h.case_number or h.case_id,
             court=h.court,
             date=h.date,
-            summary=truncate(h.case_name, limit=200),
+            summary=h.case_name,
             keywords=keywords,
         )
         for h in hits

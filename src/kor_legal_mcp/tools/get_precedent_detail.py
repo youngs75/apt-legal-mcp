@@ -5,7 +5,7 @@ from kor_legal_mcp.models.schemas import (
     GetPrecedentDetailInput,
     GetPrecedentDetailOutput,
 )
-from kor_legal_mcp.tools._common import ToolContext, truncate
+from kor_legal_mcp.tools._common import ToolContext
 
 
 class PrecedentNotFound(Exception):
@@ -49,9 +49,9 @@ async def handle(ctx: ToolContext, payload: dict) -> GetPrecedentDetailOutput:
         court=detail.court,
         date=detail.date,
         case_type=detail.case_type,
-        summary=truncate(detail.summary or detail.holding, limit=500),
-        facts=truncate(detail.reasoning, limit=1000),
-        reasoning=truncate(detail.reasoning, limit=2000),
-        ruling=truncate(detail.ruling, limit=500),
+        summary=detail.summary,
+        facts=detail.holding,
+        reasoning=detail.reasoning,
+        ruling=detail.ruling,
         related_laws=detail.related_laws,
     )
