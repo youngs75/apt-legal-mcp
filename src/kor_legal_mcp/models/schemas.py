@@ -58,6 +58,7 @@ class GetLawArticleOutput(BaseModel):
 
 
 class PrecedentSearchResultItem(BaseModel):
+    case_id: str  # 판례일련번호 — pass this to get_precedent_detail for fastest lookup
     case_number: str
     court: str
     date: str

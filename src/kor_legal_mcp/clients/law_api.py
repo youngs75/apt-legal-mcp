@@ -248,12 +248,20 @@ class LawApiClient:
         query: str,
         court_level: str | None = None,
         max_results: int = 5,
+        body_search: bool = True,
     ) -> list[PrecedentHit]:
+        # body_search=True (default): search=2 본문검색 — better recall for
+        # semantic queries like "층간소음".
+        # body_search=False: omit search param → law.go.kr defaults to
+        # section=evtNm (사건명/사건번호 metadata). Required when looking up
+        # a precedent by its 사건번호 (e.g. "2021마6763") because the case
+        # number is not part of body text.
         key = make_key(
             "law_api.search_precedents",
             query=query,
             court_level=court_level,
             max_results=max_results,
+            body_search=body_search,
         )
         cached = await self._cache.get(key)
         if cached is not None:
@@ -264,8 +272,9 @@ class LawApiClient:
             "type": "XML",
             "query": query,
             "display": str(max_results),
-            "search": "2",  # 2 = 본문검색 (default 1 = 사건명만)
         }
+        if body_search:
+            params["search"] = "2"
         root = await self._get_xml(params, endpoint="search")
         hits: list[PrecedentHit] = []
         for prec_el in root.findall(".//prec"):

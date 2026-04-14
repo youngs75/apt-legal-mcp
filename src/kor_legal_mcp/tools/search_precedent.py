@@ -66,6 +66,7 @@ async def handle(ctx: ToolContext, payload: dict) -> SearchPrecedentOutput:
     keywords = extract_keywords(query)
     results = [
         PrecedentSearchResultItem(
+            case_id=h.case_id,
             case_number=h.case_number or h.case_id,
             court=h.court,
             date=h.date,

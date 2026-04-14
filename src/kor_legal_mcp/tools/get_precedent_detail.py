@@ -21,9 +21,15 @@ async def handle(ctx: ToolContext, payload: dict) -> GetPrecedentDetailOutput:
     detail = None
     try:
         if case_ref.isdigit():
+            # All-digit input is treated as 판례일련번호 (fast path).
             detail = await ctx.law_api.get_precedent_detail(case_ref)
         if detail is None:
-            hits = await ctx.law_api.search_precedents(query=case_ref, max_results=5)
+            # Fallback: 사건번호 search. Must use body_search=False so
+            # law.go.kr matches against the 사건번호 metadata field
+            # (search=2 본문검색 does NOT index case numbers).
+            hits = await ctx.law_api.search_precedents(
+                query=case_ref, max_results=5, body_search=False
+            )
             match = next(
                 (h for h in hits if h.case_number == case_ref or h.case_id == case_ref),
                 hits[0] if hits else None,
