@@ -1,10 +1,12 @@
 # 공동주택 법률 자문 AI 시스템 — 전체 구현 계획서
 
-> **⚠️ 범용화 노트 (2026-04-14):**
+> **⚠️ 범용화 노트 (2026-04-15 갱신):**
 > 본 문서는 초기 구상(공동주택 도메인 전제) 기준이다. 이후 MCP 서버는 `kor-legal-mcp`로 **도메인 무관 범용 한국 법령 조회 서버**로 재정의되었다.
-> - 식별자만 갱신: `apt-legal-mcp` → `kor-legal-mcp`, `apt_legal_mcp` → `kor_legal_mcp`, `apt-legal://` → `kor-legal://`
-> - 도메인 특화 자산(운영규약, 지자체 조례 RAG)은 별도 MCP 서버(`apt-domain-mcp`, 예정)로 분리
-> - "공동주택" narrative는 Vertical Agent(`apt-legal-agent`) 책임 — 본 문서의 도메인 서술은 historical context로 보존
+> - 식별자 갱신: `apt-legal-mcp` → `kor-legal-mcp`, `apt_legal_mcp` → `kor_legal_mcp`, `apt-legal://` → `kor-legal://`
+> - Tool 수 확장: 초기 6개 → **현재 15개** (law/prec + expc/detc/admrul/ordin/trty 5개 target 추가). 최신 목록·스키마는 `AGENTS.md` 및 `docs/02_mcp_server_codex_spec.md` 참조.
+> - 도메인 특화 자산(운영규약, 지자체 조례 RAG)은 별도 MCP 서버(`apt-domain-mcp`, 예정)로 분리. 자치법규 "일반 조회"는 본 서버 `search_ordinance`(region 필터)로 커버.
+> - "공동주택" narrative는 Vertical Agent(`apt-legal-agent`) 책임 — 본 문서의 도메인 서술은 historical context로 보존.
+> - **운영 상태 (2026-04-15):** ChatGPT Enterprise CustomGPT `한국 법령 리서처`에서 kor-legal-mcp를 직접 호출하는 구성이 end-to-end 검증 완료. 본 문서 §2.1의 "Vertical Agent 경유" 플로우는 현 시점에 필수가 아니며 Phase 2 옵션으로 보존.
 > 자세한 현 구조는 `AGENTS.md` 참조.
 
 ## 1. 프로젝트 개요

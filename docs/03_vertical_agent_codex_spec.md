@@ -1,6 +1,8 @@
 # Apt-Legal Agent — Codex 작업지시서
 
-> **⚠️ 참고 (2026-04-14):** 본 문서는 별도 리포 `apt-legal-agent`(Vertical AI Agent)의 작업지시서이며, 본 리포(`kor-legal-mcp`)에는 **참고용**으로만 보관된다. Agent 측 도메인 지식(공동주택 운영규약, 분쟁 유형 등)은 Agent와 별도 RAG MCP 서버에서 처리하고, 본 MCP 서버는 범용 법령 조회만 담당한다.
+> **⚠️ 참고 (2026-04-15 갱신):** 본 문서는 별도 리포 `apt-legal-agent`(Vertical AI Agent)의 작업지시서이며, 본 리포(`kor-legal-mcp`)에는 **참고용**으로만 보관된다. Agent 측 도메인 지식(공동주택 운영규약, 분쟁 유형 등)은 Agent와 별도 RAG MCP 서버에서 처리하고, 본 MCP 서버는 범용 법령 조회만 담당한다.
+>
+> **현 운영 상태 (2026-04-15):** Vertical Agent는 아직 구현되지 않았으며, 현재는 **ChatGPT Enterprise CustomGPT `한국 법령 리서처`가 kor-legal-mcp를 직접 호출**하는 구성이 운영 중이다. 본 문서에 기술된 A2A/FastAPI/LiteLLM 스택은 Phase 2 확장 옵션이며, 본 리포 작업에 직접 영향을 주지 않는다. 또한 본 문서의 MCP tool 참조는 초기 6개 기준이므로, 최신 15개 tool 목록은 `AGENTS.md` 참조.
 
 ## 개요
 

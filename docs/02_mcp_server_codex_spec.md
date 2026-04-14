@@ -1,6 +1,13 @@
 # Kor-Legal MCP Server — Codex 작업지시서
 
-> **⚠️ 범용화 노트 (2026-04-14):** 원래 `apt-legal-mcp`(공동주택 한정)로 작성되었으나, 현재는 `kor-legal-mcp`로 **도메인 무관 범용 한국 법령 MCP 서버**로 재정의되었다. 도메인 narrative는 historical context로 보존하되, 식별자/패키지명은 갱신된 상태다. 현 구조는 `AGENTS.md` 참조.
+> **⚠️ 범용화 노트 (2026-04-15 갱신):** 원래 `apt-legal-mcp`(공동주택 한정)로 작성되었으나, 현재는 `kor-legal-mcp`로 **도메인 무관 범용 한국 법령 MCP 서버**로 재정의되었다. 도메인 narrative는 historical context로 보존하되, 식별자/패키지명은 갱신된 상태다.
+>
+> **현 구현 상태 (2026-04-15):**
+> - **Tool 수: 초기 스펙 6개 → 현재 15개.** 본 문서의 Tool 섹션(§3.2 이하, §4 등)은 초기 6개(`search_law`, `get_law_article`, `search_precedent`, `get_precedent_detail`, `search_interpretation`, `compare_laws`) 기준이다. 이후 `get_interpretation_detail`, `search_constitutional_decision`, `get_constitutional_decision_detail`, `search_admrule`, `get_admrule_detail`, `search_ordinance`, `get_ordinance_detail`, `search_treaty`, `get_treaty_detail` 9개가 추가되었다.
+> - **전체 15개 tool의 최신 목록·용도·target 매핑은 `AGENTS.md` §제공 MCP Tools 참조 (single source of truth).**
+> - **응답 원칙 변경:** tool 응답은 law.go.kr **원문 그대로** 반환. 초기 스펙의 "200자 요약/500자 truncate"는 모두 제거됨. 요약은 caller LLM 책임.
+> - **판례 본문검색:** `search_precedent`는 `search=2` (body_search=True)를 항상 포함. 사건명(`section=evtNm`) 기본값만으로는 누락이 많음.
+> - **운영 경로:** ChatGPT Enterprise CustomGPT → kor-legal-mcp (Streamable HTTP, `.../mcp` suffix 필수). Vertical Agent 경유 플로우는 현재 미사용.
 
 ## 개요
 
@@ -103,7 +110,7 @@ MCP 서버 메인 모듈.
 
 기능:
 1. MCP Server 인스턴스 생성 (name="kor-legal-mcp", version="1.0.0")
-2. 모든 Tools 등록 (6개)
+2. 모든 Tools 등록 (현재 15개 — 최신 목록은 AGENTS.md 참조)
 3. 모든 Resources 등록
 4. 모든 Prompts 등록
 5. 두 가지 transport 모드 지원:
@@ -152,7 +159,7 @@ MCP 서버 메인 모듈.
    - article_number 정규화: "제20조", "20조", "제20", "20" 모두 매칭
 
 4. warmup() -> None
-   - 주요 법령 6개의 메타데이터를 사전 캐싱:
+   - 주요 법령 메타데이터 사전 캐싱 (예시 목록 — 현재는 도메인 비종속으로 필수 아님):
      * 공동주택관리법
      * 공동주택관리법 시행령
      * 집합건물의 소유 및 관리에 관한 법률
