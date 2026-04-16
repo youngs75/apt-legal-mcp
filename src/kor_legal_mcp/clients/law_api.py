@@ -365,14 +365,8 @@ class LawApiClient:
         return articles
 
     async def get_article(self, law_name: str, article_number: str) -> Article | None:
-        hits = await self.search_laws(law_name, max_results=3)
-        target = None
-        for hit in hits:
-            if law_name in hit.law_name or hit.law_name in law_name:
-                target = hit
-                break
-        if target is None and hits:
-            target = hits[0]
+        hits = await self.search_laws(law_name, max_results=5)
+        target = self._best_law_match(law_name, hits)
         if target is None:
             return None
         articles = await self.get_law_detail(target.mst)
@@ -380,6 +374,26 @@ class LawApiClient:
             if article_matches(art.article_number, article_number):
                 return art
         return None
+
+    @staticmethod
+    def _best_law_match(
+        law_name: str, hits: list[LawSearchHit]
+    ) -> LawSearchHit | None:
+        if not hits:
+            return None
+        # 1. Exact name match
+        for hit in hits:
+            if hit.law_name == law_name:
+                return hit
+        # 2. Substring match — prefer shortest name (본법 > 시행령 > 시행규칙)
+        candidates = [
+            hit for hit in hits
+            if law_name in hit.law_name or hit.law_name in law_name
+        ]
+        if candidates:
+            return min(candidates, key=lambda h: len(h.law_name))
+        # 3. Fallback to first result
+        return hits[0]
 
     async def search_precedents(
         self,
