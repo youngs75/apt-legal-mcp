@@ -46,6 +46,15 @@ async def handle(ctx: ToolContext, payload: dict) -> SearchLawOutput:
                     retry_query, max_results=params.max_results
                 )
 
+    # Fallback: when law_name is specified but combined query yielded no
+    # hits, search by law_name alone and rank articles locally by relevance
+    # to the original query.  law.go.kr full-text search often fails on
+    # combined terms like "공동주택관리법 장기수선충당금".
+    local_filter = False
+    if not hits and params.law_name:
+        hits = await ctx.law_api.search_laws(params.law_name, max_results=params.max_results)
+        local_filter = True
+
     results: list[LawSearchResultItem] = []
     for hit in hits[: params.max_results]:
         articles = []
@@ -64,23 +73,47 @@ async def handle(ctx: ToolContext, payload: dict) -> SearchLawOutput:
                 )
             )
             continue
-        best = max(
-            articles,
-            key=lambda a: score_relevance(
-                query, f"{a.article_title}\n{a.full_text}"
-            ),
-        )
-        results.append(
-            LawSearchResultItem(
-                law_name=hit.law_name,
-                article_number=best.article_number,
-                article_title=best.article_title,
-                snippet=snippet_around(best.full_text, query),
-                relevance_score=score_relevance(
-                    query, f"{best.article_title}\n{best.full_text}"
+
+        if local_filter:
+            # Return top-N articles ranked by relevance to the original
+            # query instead of just the single best match.
+            scored = sorted(
+                articles,
+                key=lambda a: score_relevance(
+                    query, f"{a.article_title}\n{a.full_text}"
+                ),
+                reverse=True,
+            )
+            for art in scored[:3]:
+                sc = score_relevance(query, f"{art.article_title}\n{art.full_text}")
+                if sc > 0:
+                    results.append(
+                        LawSearchResultItem(
+                            law_name=hit.law_name,
+                            article_number=art.article_number,
+                            article_title=art.article_title,
+                            snippet=snippet_around(art.full_text, query),
+                            relevance_score=sc,
+                        )
+                    )
+        else:
+            best = max(
+                articles,
+                key=lambda a: score_relevance(
+                    query, f"{a.article_title}\n{a.full_text}"
                 ),
             )
-        )
+            results.append(
+                LawSearchResultItem(
+                    law_name=hit.law_name,
+                    article_number=best.article_number,
+                    article_title=best.article_title,
+                    snippet=snippet_around(best.full_text, query),
+                    relevance_score=score_relevance(
+                        query, f"{best.article_title}\n{best.full_text}"
+                    ),
+                )
+            )
 
     results.sort(key=lambda r: r.relevance_score, reverse=True)
     message = None
