@@ -23,6 +23,13 @@ class LawSearchResultItem(BaseModel):
     article_title: str
     snippet: str
     relevance_score: float = Field(ge=0.0, le=1.0)
+    # Law-level metadata copied from law.go.kr search hit. Required by
+    # downstream agents that build deterministic citation guards
+    # ("법령 X 제Y조 시행일자 Z" must round-trip without LLM creativity).
+    # 법령 단위 metadata. 결정론 citation 가드를 만드는 다운스트림 에이전트가
+    # ("법령 X 제Y조 시행일자 Z" 가 LLM 창작 없이 round-trip 되어야 함) 사용.
+    enforcement_date: str | None = None
+    last_amended: str | None = None
 
 
 class SearchLawInput(BaseModel):

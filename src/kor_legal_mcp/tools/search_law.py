@@ -70,6 +70,8 @@ async def handle(ctx: ToolContext, payload: dict) -> SearchLawOutput:
                     article_title="",
                     snippet="",
                     relevance_score=score_relevance(query, hit.law_name),
+                    enforcement_date=hit.enforcement_date,
+                    last_amended=hit.last_amended,
                 )
             )
             continue
@@ -94,6 +96,8 @@ async def handle(ctx: ToolContext, payload: dict) -> SearchLawOutput:
                             article_title=art.article_title,
                             snippet=snippet_around(art.full_text, query),
                             relevance_score=sc,
+                            enforcement_date=hit.enforcement_date,
+                            last_amended=hit.last_amended,
                         )
                     )
         else:
@@ -112,6 +116,8 @@ async def handle(ctx: ToolContext, payload: dict) -> SearchLawOutput:
                     relevance_score=score_relevance(
                         query, f"{best.article_title}\n{best.full_text}"
                     ),
+                    enforcement_date=hit.enforcement_date,
+                    last_amended=hit.last_amended,
                 )
             )
 

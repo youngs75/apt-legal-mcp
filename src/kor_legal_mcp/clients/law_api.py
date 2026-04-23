@@ -38,6 +38,13 @@ class Article:
     article_number: str  # canonical "제20조"
     article_title: str
     full_text: str
+    # Law-level metadata. Copied from the search hit by ``get_article`` —
+    # ``get_law_detail`` alone does not consistently surface 시행일자 /
+    # 공포일자 in the per-article XML, so we attach it post-hoc.
+    # 법령 단위 metadata. ``get_article`` 이 search hit 에서 복사. 조문 단위
+    # XML 만으로는 시행일자/공포일자 가 일관되게 노출되지 않아 사후 attach 함.
+    enforcement_date: str | None = None
+    last_amended: str | None = None
 
 
 @dataclass
@@ -372,6 +379,12 @@ class LawApiClient:
         articles = await self.get_law_detail(target.mst)
         for art in articles:
             if article_matches(art.article_number, article_number):
+                # Inject law-level metadata so callers do not have to re-query
+                # the search endpoint just to learn 시행일자.
+                # 호출자가 시행일자만 알기 위해 search 엔드포인트를 다시 부르지
+                # 않도록 법령 단위 metadata 를 inject.
+                art.enforcement_date = target.enforcement_date
+                art.last_amended = target.last_amended
                 return art
         return None
 

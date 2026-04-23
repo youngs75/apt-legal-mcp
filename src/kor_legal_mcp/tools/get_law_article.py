@@ -35,8 +35,10 @@ async def handle(ctx: ToolContext, payload: dict) -> GetLawArticleOutput:
         article_number=article.article_number,
         article_title=article.article_title,
         full_text=article.full_text,
-        enforcement_date=None,
-        last_amended=None,
+        # Sourced from the search hit attached in ``LawApiClient.get_article``.
+        # search hit 에서 ``LawApiClient.get_article`` 이 attach 한 값을 사용.
+        enforcement_date=article.enforcement_date,
+        last_amended=article.last_amended,
         amendment_history=None,
     )
     await ctx.cache.set(cache_key, output.model_dump(), ttl_seconds=7 * 24 * 3600)
